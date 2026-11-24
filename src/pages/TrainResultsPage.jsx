@@ -1,0 +1,172 @@
+import React, { useState, useMemo } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Train, Filter, ArrowUpDown, ShieldCheck, RotateCcw } from 'lucide-react';
+import TrainCard from '../components/cards/TrainCard';
+import BookingSearch from '../components/search/BookingSearch';
+import { useBooking } from '../context/BookingContext';
+
+export default function TrainResultsPage() {
+  const [urlParams] = useSearchParams();
+  const { allTrains, formatPrice, searchParams } = useBooking();
+
+  const [showModifySearch, setShowModifySearch] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(35);
+  const [sortBy, setSortBy] = useState('price-asc');
+
+  const fromStation = urlParams.get('from') || searchParams.train.fromStation || 'Dhaka (Kamalapur)';
+  const toStation = urlParams.get('to') || searchParams.train.toStation || "Cox's Bazar";
+
+  const filteredTrains = useMemo(() => {
+    return allTrains
+      .filter((train) => {
+        if (train.startingPrice > maxPrice) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-asc') return a.startingPrice - b.startingPrice;
+        if (sortBy === 'price-desc') return b.startingPrice - a.startingPrice;
+        if (sortBy === 'rating') return b.rating - a.rating;
+        return 0;
+      });
+  }, [allTrains, maxPrice, sortBy]);
+
+  const resetFilters = () => {
+    setMaxPrice(35);
+    setSortBy('price-asc');
+  };
+
+  return (
+    <div className="min-h-screen bg-surface pb-20">
+      
+      {/* Header */}
+      <div className="bg-primary text-white py-6 border-b border-primary-light/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs text-slate-300 font-medium mb-1">
+                <Link to="/" className="hover:underline">Home</Link>
+                <span>/</span>
+                <span className="text-accent">Intercity Trains</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold font-sans flex items-center gap-2">
+                <span>{fromStation}</span>
+                <span className="text-accent">➔</span>
+                <span>{toStation}</span>
+              </h1>
+              <p className="text-xs text-slate-300 mt-1">
+                Journey Date: {searchParams.train.journeyDate} · Direct Express Track
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowModifySearch(!showModifySearch)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition-all self-start md:self-auto"
+            >
+              {showModifySearch ? 'Close Search Panel' : 'Modify Search'}
+            </button>
+          </div>
+
+          {showModifySearch && (
+            <div className="mt-6 pt-6 border-t border-primary-light/30">
+              <BookingSearch defaultTab="trains" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 shadow-card border border-slate-100 space-y-6">
+              
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2 font-bold text-primary text-base">
+                  <Filter className="w-4 h-4 text-secondary" />
+                  <span>Filters</span>
+                </div>
+                <button
+                  onClick={resetFilters}
+                  className="text-xs text-secondary hover:underline font-semibold flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset</span>
+                </button>
+              </div>
+
+              {/* Price Filter */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-2">
+                  <span>Max Fare</span>
+                  <span className="text-secondary font-bold text-sm">{formatPrice(maxPrice)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="8"
+                  max="35"
+                  step="2"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-full accent-secondary cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>{formatPrice(8)}</span>
+                  <span>{formatPrice(35)}</span>
+                </div>
+              </div>
+
+              {/* Train Classes Info */}
+              <div className="border-t pt-4 space-y-2 text-xs text-slate-600">
+                <h4 className="font-bold uppercase tracking-wider text-slate-500 mb-2">
+                  Class Information
+                </h4>
+                <p><strong>Snigdha:</strong> Air-conditioned reclining chair coaches.</p>
+                <p><strong>Shovon Chair:</strong> Non-AC comfortable padded seating.</p>
+                <p><strong>AC Berth:</strong> Private night sleeper berths with fresh bedsheets.</p>
+              </div>
+
+              <div className="border-t pt-4 flex items-center gap-2 text-xs text-slate-500">
+                <ShieldCheck className="w-4 h-4 text-accent shrink-0" />
+                <span>Simulated official railway booking tickets</span>
+              </div>
+
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="lg:col-span-3 space-y-4">
+            <div className="bg-white rounded-2xl px-5 py-3 shadow-card border border-slate-100 flex flex-wrap items-center justify-between gap-4">
+              <span className="text-sm font-semibold text-slate-600">
+                <strong className="text-primary">{filteredTrains.length}</strong> Intercity Trains Scheduled
+              </span>
+
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+                <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                <span>Sort by:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-bold text-primary outline-none"
+                >
+                  <option value="price-asc">Starting Fare: Low to High</option>
+                  <option value="price-desc">Starting Fare: High to Low</option>
+                  <option value="rating">Train Rating</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {filteredTrains.map((train) => (
+                <TrainCard key={train.id} train={train} />
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  );
+}
